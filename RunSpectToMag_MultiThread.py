@@ -19,7 +19,7 @@ class ModelArgument:
 def PingFuncSubProcWithName(a):
     logging.info("Thread %s: Started", a.filename)
     cmd = a.filename + "," + a.nzone + "\n"
-    p = subprocess.Popen( ['SpectToMag.out'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
+    p = subprocess.Popen( ['../SNeModel/fortran/SpectToMag.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
     p.communicate(cmd)
     logging.info("Thread %s: Completed", a.filename)
 
@@ -51,16 +51,16 @@ f = executor.map(PingFuncSubProcWithName, data)
 
 logging.info("Waiting for threads to complete")
 
-""" 
+"""
 c This program is open source under the BSD-3 License.
 c Redistribution and use in source and binary forms, with or without modification, are permitted
 c provided that the following conditions are met:
 c 1. Redistributions of source code must retain the above copyright notice, this list of c conditions andthe following disclaimer.
-c 
+c
 c 2.Redistributions in binary form must reproduce the above copyright notice, this list of !c conditions
 c and the following disclaimer in the documentation and/or other materials provided with the
 c distribution.
-c 
+c
 c 3.Neither the name of the copyright holder nor the names of its contributors may be used to !c endorse
 c or promote products derived from this software without specific prior written permission.
 c
