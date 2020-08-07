@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import concurrent.futures
 import logging
 import threading
@@ -34,7 +35,7 @@ logging.info("Staring Main Thread")
 
 # Create an array of arguments to pass into the function
 data = []
-infile = open("infile.txt", "r")
+infile = open("ss-radius-var-10-15.txt", "r")
 values = infile.readlines()
 
 for line in values:
