@@ -8,6 +8,8 @@ import time
 import os
 import subprocess
 
+
+bin_dir = os.environ.get('SNE_BIN')
 class ModelArgument:
 
     def __init__(self, alpha, rstar,mexp,eexp,filename):
@@ -22,7 +24,7 @@ class ModelArgument:
 def PingFuncSubProcWithName(a):
     logging.info("Thread %s: Started", a.filename)
     cmd = a.alpha + "," + a.rstar + "," + a.mexp + "," + a.eexp + "," + a.filename + "\n"
-    p = subprocess.Popen( ['../../SNeModel/fortran/ShockHeatingPlusAccelv3.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
+    p = subprocess.Popen( [bin_dir + '/ShockHeatingPlusAccelv3.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
     stdout, stderr = p.communicate(cmd)
     logging.info(stdout)
     logging.error(stderr)
