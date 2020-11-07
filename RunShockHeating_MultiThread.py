@@ -1,9 +1,5 @@
 #!/usr/bin/env python
-<<<<<<< HEAD
-# -*- coding: UTF-8 -*
-=======
 # -*- coding: utf-8 -*-
->>>>>>> ec792f44443b9d36bc26c3e06271a78684697bba
 import concurrent.futures
 import logging
 import threading
@@ -16,19 +12,20 @@ import subprocess
 bin_dir = os.environ.get('SNE_BIN')
 class ModelArgument:
 
-    def __init__(self, alpha, rstar,mexp,eexp,filename):
+    def __init__(self, alpha, rstar,mexp,eexp,filename, nzones):
         self.alpha = alpha
         self.rstar=rstar
         self.mexp=mexp
         self.eexp = eexp
         self.filename = filename
-
+        self.nzones = nzones
 
 
 def PingFuncSubProcWithName(a):
     logging.info("Thread %s: Started", a.filename)
-    cmd = a.alpha + "," + a.rstar + "," + a.mexp + "," + a.eexp + "," + a.filename + "\n"
+    cmd = a.alpha + "," + a.rstar + "," + a.mexp + "," + a.eexp + "," + a.filename + a.nzones + "," + "\n"
     p = subprocess.Popen( [bin_dir + '/ShockHeatingPlusAccelv3.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
+    print(cmd)
     stdout, stderr = p.communicate(cmd)
     logging.info(stdout)
     logging.error(stderr)
@@ -47,7 +44,7 @@ values = infile.readlines()
 
 for line in values:
     field = line.split(',')
-    arg = ModelArgument(field[0], field[1], field[2], field[3], field[4])
+    arg = ModelArgument(field[0], field[1], field[2], field[3], field[4], field[5])
     data.append(arg)
 # create an executor
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
