@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-<<<<<<< HEAD
-# -*- coding: UTF-8 -*
-=======
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
->>>>>>> ec792f44443b9d36bc26c3e06271a78684697bba
+
 import concurrent.futures
 import logging
 import threading
@@ -12,26 +9,21 @@ import time
 import os
 import subprocess
 
-
-bin_dir = os.environ.get('SNE_BIN')
 class ModelArgument:
 
-    def __init__(self, alpha, rstar,mexp,eexp,filename):
+    def __init__(self, alpha, rstar,mexp,eexp,filename,nzone):
         self.alpha = alpha
         self.rstar=rstar
         self.mexp=mexp
         self.eexp = eexp
         self.filename = filename
-
-
+        self.nzone = nzone
 
 def PingFuncSubProcWithName(a):
     logging.info("Thread %s: Started", a.filename)
-    cmd = a.alpha + "," + a.rstar + "," + a.mexp + "," + a.eexp + "," + a.filename + "\n"
-    p = subprocess.Popen( [bin_dir + '/ShockHeatingPlusAccelv3.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
-    stdout, stderr = p.communicate(cmd)
-    logging.info(stdout)
-    logging.error(stderr)
+    cmd = a.filename + "," + a.nzone + "\n"
+    p = subprocess.Popen( ['../../SNeModel/fortran/specuvot3.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
+    p.communicate(cmd)
     logging.info("Thread %s: Completed", a.filename)
 
 
@@ -47,7 +39,12 @@ values = infile.readlines()
 
 for line in values:
     field = line.split(',')
-    arg = ModelArgument(field[0], field[1], field[2], field[3], field[4])
+    name = field[4]
+    file=name.rstrip()
+    model = open (file+"BB.dat", "r" )
+    lines = model.readlines ()
+    nzone=str(len(lines))
+    arg = ModelArgument(field[0], field[1], field[2], field[3], field[4],nzone)
     data.append(arg)
 # create an executor
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
@@ -56,7 +53,6 @@ executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 f = executor.map(PingFuncSubProcWithName, data)
 
 logging.info("Waiting for threads to complete")
-
 
 """
 c This program is open source under the BSD-3 License.

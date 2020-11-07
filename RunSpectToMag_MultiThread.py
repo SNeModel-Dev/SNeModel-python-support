@@ -1,4 +1,6 @@
 #! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import concurrent.futures
 import logging
 import threading
@@ -20,7 +22,7 @@ class ModelArgument:
 def PingFuncSubProcWithName(a):
     logging.info("Thread %s: Started", a.filename)
     cmd = a.filename + "," + a.nzone + "\n"
-    p = subprocess.Popen( ['../SNeModel/fortran/SpectToMag.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
+    p = subprocess.Popen( ['../../SNeModel/fortran/SpectToMag.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True )
     p.communicate(cmd)
     logging.info("Thread %s: Completed", a.filename)
 
@@ -32,7 +34,7 @@ logging.info("Staring Main Thread")
 
 # Create an array of arguments to pass into the function
 data = []
-infile = open("ss-radius-var-10-15.txt", "r")
+infile = open("infile3.txt", "r")
 values = infile.readlines()
 
 for line in values:
