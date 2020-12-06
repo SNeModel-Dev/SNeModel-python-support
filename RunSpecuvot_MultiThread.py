@@ -42,6 +42,7 @@ for line in values:
     field = line.split(',')
     name = field[4]
     file=name.rstrip()
+    print(file)
     model = open (file+"BB.dat", "r" )
     lines = model.readlines ()
     nzone=str(len(lines))
