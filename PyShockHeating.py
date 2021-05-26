@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 class SuperNova:
     def __init__(self, alpha=2.0, rstar=1.0e13 , mexp=2.78e34, eexp=0.5e51, filename='test', grid_sz=2000,
@@ -89,6 +89,8 @@ class SuperNova:
         self.prop_file = open(filename+'prop.dat', 'w+')
         self.init_file = open(filename+'initial.dat', 'w+')
 
+
+
         # starting the initial conditions setup
         self.rho0 = self.mexp / self.pi4 / (rstar**(3.0-self.alpha) - 1e9**(3.0 - alpha))
         print("arange")
@@ -136,6 +138,133 @@ class SuperNova:
         self.vshr = self.v * (self.rho/self.rhosh0)
         self.tsh0 = (((3/2)*(self.gam+1)/self.a) * self.rhosh0*self.vshr**2)**0.25
         self.energy = (self.a * self.tsh0**4 * self.pi43 * (self.r[1:]**3 - self.r[0:grid_sz]**3))
+        output_data = np.stack((np.arange(self.grid_sz), self.r[1:], self.rho, self.tsh0, self.vsh0, self.m), axis=-1)
+        print(output_data)
+        fig, axs = plt.subplots(3, 2)
+        print(output_data[:,0].shape)
+        print(output_data[:,0])
+        axs[0,0].plot(output_data[:,0], output_data[:,1], 'o-')
+        axs[0,0].set_title("Radius vs grid position")
+        axs[0,1].plot(output_data[:,1], output_data[:,2], 'o-')
+        axs[0,1].set_title("Density vs radius")
+        axs[1,0].plot(output_data[:,1], output_data[:,3], 'o-')
+        axs[1,0].set_title("Tsh0 vs radius")
+        axs[1,1].plot(output_data[:,1], output_data[:,4], 'o-')
+        axs[1,1].set_title("VSH0 vs radius")
+        axs[2,0].plot(output_data[:,1], output_data[:,5], 'o-')
+        axs[2,0].set_title("Mass vs radius")
+        plt.show()
+        self.time = 0.0
+        self.dt = 2000.0 / grid_sz
+        self.lumt = 0.0
+        self.jedge = grid_sz-1 #index of last element of the grid
+        self.jphot = grid_sz-1 #index of last element of the grid
+        self.lums = 0.0
+        #self.rhosh = 0.0 this should be a list of zeros??
+        self.rhow = 0.0
+        self.vshw = 0.0
+        self.accel = 1.0
+        self.rho1 = self.rho[-1]
+        self.msh = 0.0
+
+        # beginning the time steps
+
+        for i in np.arange(10000000):
+            #print("Timestep: " + str(i))
+            self.r[1:] = self.r[1:] + self.vsh0 * self.accel * self.dt
+            self.rho = self.m / self.pi43 / (self.r[1:]**3 - self.r[0:grid_sz]**3)
+           # energy_idx = np.where(self.energy >= 1.0)
+           # print("energy")
+           # print(self.energy)
+          #  print(energy_idx)
+           # print(self.energy[energy_idx].shape)
+           # print(self.r[energy_idx+1].shape)
+           # self.temp[energy_idx] = (self.energy[energy_idx] / self.pi43 /(self.r[energy_idx+1]**3 - self.r[energy_idx]**3)/self.a)**0.25
+            for j in np.arange(self.grid_sz):
+                #print("First grid loop step: " + str(j))
+                if(self.energy[j] < 1.0):
+                    self.temp[j] = 0.0
+                else:
+                    self.temp[j] = (self.energy[j] / self.pi43 / (self.r[j+1]**3 - self.r[j]**3)/self.a)**0.25
+
+                if(j > self.core_idx[0][-1]):
+                    if(self.temp[j] < self.trecom):
+                        self.factor[j] = (self.temp[j]/self.trecom)**self.precom
+                        self.factor[j] = max(1.0e-4, self.factor[j])
+                    else:
+                        self.factor[j] = 1.0
+
+                if(j<= self.jphot -1):
+                    self.diff = self.r[j+1]**2 * self.difffac / 0.5 / (self.kappa[j+1] * self.factor[j+1] + self.kappa[j] * self.factor[j]) / (self.rho[j+1] + self.rho[j]) * (self.temp[j+1]**4 - self.temp[j]**4) / (self.r[j+2] - self.r[j+1])
+                    self.energy[j+1]= self.energy[j+1] - self.diff * self.dt
+                    self.energy[j] = self.energy[j] + self.diff*self.dt
+
+            for j in np.arange(self.grid_sz):
+                #print("Energy grid loop step: " + str(j))
+                if(self.edot[j] > 0):
+                    self.energy[j] = self.energy[j] + self.edot[j] * np.exp(-self.time/self.tauni)*self.dt
+
+            self.tau = 0.0
+            self.lum = 0.0
+
+            for j in np.arange(self.grid_sz):
+                #print("Shell loop step: " + str(j))
+                self.rhosh[j] = ((self.gam+1)/(self.gam-1))*self.rho[j]
+                self.vsh[j] = (self.rho[j] * self.vsh0[j] * self.accel) / self.rhosh[j]
+                self.tsh[j] = (((3/2) * (self.gam +1)/ self.a) * self.rhosh[j] * self.vsh[j]**2)**0.25
+                self.esh[j] = ((self.a * self.tsh[j]**4) * self.pi43 * (self.r[j+1]**3 - self.r[j]**3))
+            for j in range(self.grid_sz, 0, -1):
+                #print("Countdown loop step: " + str(j))
+                self.tau = self.tau + self.rho[j-1] * self.kappa[j-1] * self.factor[j-1] * (self.r[j] - self.r[j-1])
+                self.rhow = self.mdot /(self.pi4 * self.r[j]**2 * self.vwind)
+                self.mw = self.pi4 * self.r[j]**2 * self.tau / self.kappa[j-1]
+
+                if(self.tau > 0.4):
+                    if((i % 10000) == 0):
+                        print('Val: ' + str(self.tau) + " " + str(i) + " " + str(self.jedge) + " " + str(self.r[j]/8.0e12) + " " + str(self.temp[j-1]))
+                    if(self.tau > 10.0):
+                        self.lum = 0
+                        self.msh = self.rho[j-1] * self.pi43 * (self.rstar)**3
+                        self.accel = ((self.mw * self.kappa[j-1] * self.tau) / self.pi4 / self.rstar**2)**0.19
+                        self.rold = self.r[j]
+                    else:
+                        if (self.jedge == self.jphot):
+                            self.msh = (self.rho[j-1] * self.pi43 * (self.r[j]**3 - self.rold**3))
+                            self.rhosh[j-1] = ((self.gam + 1)/(self.gam -1)) * self.rho[j-1]
+                            self.accel = ((self.msh * self.kappa[j-1] * self.tau) / self.pi4 / self.r[j]**2)**0.19
+                        self.lum = (self.sigma * self.r[j]**2 * self.temp[j-1]**4 * np.exp(-self.tau))
+
+                    self.lum = min(self.lum, self.energy[j-1] * 0.5 / self.dt)
+                    self.lum = max(self.lum, 0.0)
+                    self.lums = self.lums + self.lum
+                    self.energy[j-1] = self.energy[j-1] - self.lum * self.dt
+                    self.rphot = self.r[j]
+                    self.tphot = self.temp[j-1]
+                    self.den = self.rho[j-1]
+                    self.jphot = j-1
+                    self.vel = self.vsh0[j-1] * self.accel
+                    break
+                else:
+                    self.jedge = j-1
+                    self.msh = self.rhow * self.pi43 * (self.r[self.jedge+1])**3
+                    self.lum = self.sigma * self.r[j]**2 * self.temp[j-1]**4
+                    self.lum = min(self.lum, self.energy[j-1] * 0.99 / self.dt)
+                    self.lum = max(self.lum, 0.0)
+                    self.lums = self.lums + self.lum
+                    self.energy[j-1] = self.energy[j-1] - self.lum * self.dt
+                    if(self.energy[j-1] < 1.0e10):
+                        self.energy[j-1] = 0.0
+
+            self.lumt = self.lumt + self.lum
+            self.lums = 0.0
+            self.time = self.time + self.dt
+            if((i % 10000) == 0):
+                print("Lum " + str(self.tau) + " " + str(self.time/3600.0/24.0) + " " + str(self.lumt/10000.0) + " " + str(self.esh[grid_sz-1]))
+                self.lumt = 0.0
+            if(self.time > 200.0 * 3600.0 * 24.0):
+                break
+
+
 
 def main():
     nova = SuperNova()
